@@ -124,11 +124,11 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
       </div>
     <?php endif; ?>
 
-    <!-- Grid Layout for Responses & Timeline -->
-    <div class="mt-8 pt-6 border-t-2 border-[#262626] grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Grid Layout for Responses & Timeline & KB -->
+    <div class="mt-8 pt-6 border-t-2 border-[#262626] grid grid-cols-1 lg:grid-cols-12 gap-6">
       
-      <!-- Left Column: Technician Responses (Wider) -->
-      <div class="lg:col-span-2">
+      <!-- Left Column: Technician Responses (Wider - 50%) -->
+      <div class="lg:col-span-6">
         <h3 class="text-xl font-bold text-[#262626] mb-4 uppercase tracking-wide">Technician Responses</h3>
 
         <?php if ($user['role'] === 'admin' || $user['role'] === 'technician'): ?>
@@ -280,8 +280,8 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
         <?php endif; ?>
       </div>
 
-      <!-- Right Column: Timeline & Quick Actions (Narrower) -->
-      <div class="lg:col-span-1 space-y-8">
+      <!-- Center Column: Activity & Quick Update (25%) -->
+      <div class="lg:col-span-3 space-y-8">
         
         <!-- Activity Timeline -->
         <?php if (!empty($logs)): ?>
@@ -335,6 +335,100 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
         <?php endif; ?>
 
       </div>
+
+      <!-- Right Column: Knowledge Base (25%) -->
+      <div class="lg:col-span-3">
+         <!-- Knowledge Base Card -->
+        <?php if ($user['role'] === 'admin' || $user['role'] === 'technician'): ?>
+            <div class="bg-white border-2 border-[#262626] rounded-xl p-5 shadow-sm h-full max-h-[calc(100vh-100px)] overflow-y-auto">
+                
+                <!-- List View -->
+                <div id="kb-list-view">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-[#262626] uppercase tracking-wide">Knowledge Base</h3>
+                        <a href="kb.php" class="text-xs text-[#eab308] font-bold hover:underline">View All</a>
+                    </div>
+                    
+                    <!-- Search Form (Mini) -->
+                <form id="kb-search-form" action="kb.php" method="GET" class="mb-4">
+                    <div class="relative">
+                        <input type="text" name="search" placeholder="Search..."
+                            class="w-full px-3 py-1.5 text-sm border-2 border-[#262626] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#f5e6a3]">
+                        <button type="submit" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#525252] hover:text-[#262626]">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Recent Articles -->
+                <?php
+                // Fetch recent 5 articles (Initial Load)
+                $kb_stmt = $conn->prepare("SELECT id, title FROM kb_articles ORDER BY created_at DESC LIMIT 5");
+                $kb_stmt->execute();
+                $kb_res = $kb_stmt->get_result();
+                $kb_articles = $kb_res ? $kb_res->fetch_all(MYSQLI_ASSOC) : [];
+                ?>
+                
+                <ul id="kb-articles-list" class="space-y-2">
+                    <?php if (!empty($kb_articles)): ?>
+                        <?php foreach ($kb_articles as $kb): ?>
+                            <li>
+                                <a href="kb_article.php?id=<?= $kb['id'] ?>" target="_blank"
+                                   class="kb-link block text-sm text-[#525252] hover:text-[#eab308] hover:underline truncate transition-colors">
+                                    <?= htmlspecialchars($kb['title']) ?>
+                                </a>
+                            </li>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <li class="text-xs text-[#525252] italic">No articles yet.</li>
+                    <?php endif; ?>
+                </ul>
+                
+                <div class="mt-4 pt-3 border-t border-[#262626]/10 text-center">
+                    <a href="kb_manage.php" class="inline-flex items-center text-xs font-bold text-[#262626] hover:text-[#eab308] uppercase tracking-wide">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        New Article
+                    </a>
+                </div>
+            </div>
+
+            <!-- Article Detail View (Hidden by default) -->
+            <div id="kb-article-view" class="hidden">
+                <button id="kb-back-btn" class="mb-3 inline-flex items-center text-xs font-bold text-[#525252] hover:text-[#262626]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Back
+                </button>
+
+                <div id="kb-loading" class="hidden flex flex-col items-center justify-center py-8">
+                    <svg class="animate-spin h-6 w-6 text-[#eab308]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+
+                <div id="kb-error" class="hidden p-3 bg-red-50 border border-red-200 rounded text-red-600 text-xs mb-4"></div>
+
+                <div id="kb-content" class="hidden">
+                    <h3 id="kb-title" class="text-lg font-bold text-[#262626] mb-2 leading-tight"></h3>
+                    <div class="flex items-center text-[10px] text-[#525252] mb-4 pb-2 border-b border-[#262626]/10 gap-2">
+                         <span id="kb-author" class="font-semibold"></span>
+                         <span>&bull;</span>
+                         <span id="kb-date"></span>
+                    </div>
+                    <div id="kb-body" class="prose prose-sm prose-p:text-xs prose-headings:text-sm text-[#262626] leading-relaxed whitespace-pre-wrap"></div>
+                </div>
+            </div>
+
+            </div>
+        <?php endif; ?>
+      </div>
+    
     </div>
 
     <div class="mt-8 flex gap-3">
@@ -360,21 +454,125 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
   </section>
 <?php else: ?>
   <?php
-  $sql = ($user['role'] === 'admin' || $user['role'] === 'technician')
-    ? "SELECT tickets.*, users.name FROM tickets JOIN users ON users.id = tickets.user_id ORDER BY tickets.id DESC"
-    : "SELECT * FROM tickets WHERE user_id = ? ORDER BY id DESC";
+  // Get filter parameters
+  $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+  $status_filter = isset($_GET['status']) ? trim($_GET['status']) : '';
+  $priority_filter = isset($_GET['priority']) ? trim($_GET['priority']) : '';
+
+  // Build Query
+  $where_clauses = [];
+  $params = [];
+  $types = '';
+
   if ($user['role'] === 'admin' || $user['role'] === 'technician') {
-    $res = $conn->query($sql);
+    $base_sql = "SELECT tickets.*, users.name FROM tickets JOIN users ON users.id = tickets.user_id";
   } else {
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param('i', $user['id']);
-    $stmt->execute();
-    $res = $stmt->get_result();
+    $base_sql = "SELECT * FROM tickets";
+    $where_clauses[] = "user_id = ?";
+    $params[] = $user['id'];
+    $types .= 'i';
   }
+
+  // Search Logic
+  if ($search) {
+      if (is_numeric($search)) {
+           // If numeric, search ID or Subject
+           $where_clauses[] = "(tickets.id = ? OR tickets.subject LIKE ?)";
+           $params[] = $search;
+           $params[] = "%$search%";
+           $types .= 'is';
+      } else {
+          $where_clauses[] = "tickets.subject LIKE ?";
+          $params[] = "%$search%";
+          $types .= 's';
+      }
+  }
+
+  // Filter Logic
+  if ($status_filter) {
+      $where_clauses[] = "tickets.status = ?";
+      $params[] = $status_filter;
+      $types .= 's';
+  }
+
+  if ($priority_filter) {
+      $where_clauses[] = "tickets.priority = ?";
+      $params[] = $priority_filter;
+      $types .= 's';
+  }
+
+  // Combine
+  if (!empty($where_clauses)) {
+      $base_sql .= " WHERE " . implode(' AND ', $where_clauses);
+  }
+
+  $base_sql .= " ORDER BY tickets.id DESC";
+
+  // Execute
+  $stmt = $conn->prepare($base_sql);
+  if (!empty($params)) {
+      // Create references for bind_param
+      $types_and_params = [];
+      $types_and_params[] = &$types; // First element is types string
+      foreach ($params as $k => $v) {
+          $params[$k] = $v; // Ensure value is set
+          $types_and_params[] = &$params[$k]; // Add reference
+      }
+      call_user_func_array([$stmt, 'bind_param'], $types_and_params);
+  }
+  $stmt->execute();
+  $res = $stmt->get_result();
   $rows = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
   ?>
   <section aria-labelledby="tickets-list-heading">
-    <h2 id="tickets-list-heading" class="text-lg font-semibold text-[#262626] mt-4 mb-4">All Tickets</h2>
+    <div class="bg-white border-2 border-[#262626] rounded-xl p-4 mb-6 shadow-sm">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <h2 id="tickets-list-heading" class="text-xl font-bold text-[#262626] uppercase tracking-wide whitespace-nowrap">All Tickets</h2>
+            
+            <form method="GET" action="tickets.php" class="flex flex-wrap items-center gap-3 w-full md:w-auto md:justify-end">
+                <!-- Search -->
+                <div class="relative w-full md:w-64">
+                    <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Search subject or ID..." 
+                        class="w-full pl-9 pr-4 py-2 border-2 border-[#262626] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f5e6a3] text-sm font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-[#525252]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                
+                <!-- Status Filter -->
+                <select name="status" class="flex-grow md:flex-none w-full md:w-40 px-3 py-2 border-2 border-[#262626] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#f5e6a3] text-sm font-medium cursor-pointer">
+                    <option value="">All Statuses</option>
+                    <?php foreach (['Open', 'In Progress', 'Closed'] as $s): ?>
+                        <option value="<?= $s ?>" <?= $status_filter === $s ? 'selected' : '' ?>><?= $s ?></option>
+                    <?php endforeach; ?>
+                </select>
+
+                <!-- Priority Filter -->
+                <select name="priority" class="flex-grow md:flex-none w-full md:w-40 px-3 py-2 border-2 border-[#262626] rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#f5e6a3] text-sm font-medium cursor-pointer">
+                    <option value="">All Priorities</option>
+                    <?php foreach (['low', 'normal', 'high'] as $p): ?>
+                        <option value="<?= $p ?>" <?= $priority_filter === $p ? 'selected' : '' ?>><?= ucfirst($p) ?></option>
+                    <?php endforeach; ?>
+                </select>
+
+                <div class="flex gap-2 w-full md:w-auto">
+                    <button type="submit" class="flex-grow md:flex-none px-3 py-2 bg-[#262626] text-[#f5e6a3] rounded-lg hover:bg-black transition-colors shadow-sm flex items-center justify-center" title="Filter">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                    </button>
+                    
+                    <?php if($search || $status_filter || $priority_filter): ?>
+                        <a href="tickets.php" class="flex-grow md:flex-none px-3 py-2 border-2 border-[#262626] text-[#262626] rounded-lg hover:bg-gray-100 transition-colors shadow-sm flex items-center justify-center" title="Clear Filters">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </form>
+        </div>
+    </div>
     <?php if (empty($rows)): ?>
       <div class="bg-white border-2 border-[#262626] rounded-xl p-8 mb-4 shadow-sm text-center">
         <p class="text-[#525252] mb-4">No tickets yet.</p>
@@ -413,12 +611,12 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                   <?php if ($user['role'] === 'admin' || $user['role'] === 'technician'): ?>
                     <td class="px-6 py-4 text-[#525252]"><?= htmlspecialchars($t['name'] ?? '') ?></td>
                   <?php endif; ?>
-                  <td class="px-6 py-4 text-right">
-                    <div class="flex items-center justify-end gap-2">
-                      <a class="inline-flex items-center px-3 py-1.5 rounded-lg border border-[#262626] bg-white text-[#262626] text-xs font-bold uppercase tracking-wide hover:bg-[#262626] hover:text-[#f5e6a3] transition-colors"
+                  <td class="px-6 py-4 text-right whitespace-nowrap">
+                    <div class="flex items-center justify-end gap-1.5 flex-nowrap">
+                      <a class="inline-flex items-center px-2.5 py-1.5 rounded-lg border border-[#262626] bg-white text-[#262626] text-xs font-bold uppercase tracking-wide hover:bg-[#262626] hover:text-[#f5e6a3] transition-colors"
                         href="tickets.php?id=<?= (int) $t['id'] ?>">View</a>
                       <?php if ($user['role'] === 'admin' || $user['role'] === 'technician'): ?>
-                        <form class="inline-flex items-center gap-2" method="post" action="update_status.php">
+                        <form class="inline-flex items-center gap-1.5" method="post" action="update_status.php">
                           <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">
                           <input type="hidden" name="id" value="<?= (int) $t['id'] ?>">
                           <select name="status" aria-label="Status"
@@ -430,11 +628,8 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                             <?php endforeach; ?>
                           </select>
                           <button type="submit"
-                            class="p-1.5 rounded-lg border border-[#262626] bg-[#f5e6a3] text-[#262626] hover:bg-[#262626] hover:text-[#f5e6a3] transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
-                              stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                            </svg>
+                            class="px-2.5 py-1.5 rounded-lg border border-[#262626] bg-[#f5e6a3] text-[#262626] text-xs font-bold uppercase tracking-wide hover:bg-[#262626] hover:text-[#f5e6a3] transition-colors">
+                            Update
                           </button>
                         </form>
                       <?php endif; ?>
@@ -445,7 +640,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                           <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">
                           <input type="hidden" name="id" value="<?= (int) $t['id'] ?>">
                           <button type="submit"
-                            class="p-1.5 rounded-lg border border-[#262626] bg-white text-red-600 hover:bg-red-600 hover:text-white transition-colors ml-2"
+                            class="p-1.5 rounded-lg border border-[#262626] bg-white text-red-600 hover:bg-red-600 hover:text-white transition-colors ml-1"
                             title="Delete">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
                               stroke="currentColor">
@@ -466,5 +661,132 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
     <?php endif; ?>
   </section>
 <?php endif; ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const listView = document.getElementById('kb-list-view');
+    const articleView = document.getElementById('kb-article-view');
+    const backBtn = document.getElementById('kb-back-btn');
+    const searchForm = document.getElementById('kb-search-form');
+    const articlesList = document.getElementById('kb-articles-list');
+    
+    // Elements to populate
+    const loading = document.getElementById('kb-loading');
+    const errorMsg = document.getElementById('kb-error');
+    const content = document.getElementById('kb-content');
+    const titleEl = document.getElementById('kb-title');
+    const authorEl = document.getElementById('kb-author');
+    const dateEl = document.getElementById('kb-date');
+    const bodyEl = document.getElementById('kb-body');
+
+    // Back button
+    backBtn.addEventListener('click', function() {
+        articleView.classList.add('hidden');
+        listView.classList.remove('hidden');
+    });
+
+    // Handle Search
+    if (searchForm) {
+        searchForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const query = this.querySelector('input[name="search"]').value;
+            
+            // Show opacity/loading state on list
+            articlesList.style.opacity = '0.5';
+            
+            fetch(`ajax_kb_search.php?search=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    articlesList.style.opacity = '1';
+                    if (data.success) {
+                        renderArticles(data.articles);
+                    } else {
+                        console.error('Search failed:', data.error);
+                        articlesList.innerHTML = '<li class="text-xs text-red-500 italic">Error searching articles.</li>';
+                    }
+                })
+                .catch(err => {
+                    articlesList.style.opacity = '1';
+                    console.error('Search error:', err);
+                    articlesList.innerHTML = '<li class="text-xs text-red-500 italic">Network error during search.</li>';
+                });
+        });
+    }
+
+    function renderArticles(articles) {
+        articlesList.innerHTML = '';
+        if (articles.length === 0) {
+            articlesList.innerHTML = '<li class="text-xs text-[#525252] italic">No articles found.</li>';
+            return;
+        }
+
+        articles.forEach(article => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <a href="kb_article.php?id=${article.id}" target="_blank"
+                   class="kb-link block text-sm text-[#525252] hover:text-[#eab308] hover:underline truncate transition-colors">
+                    ${escapeHtml(article.title)}
+                </a>
+            `;
+            articlesList.appendChild(li);
+        });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Event Delegation for KB Links (handles initial and dynamic links)
+    if (listView) {
+        listView.addEventListener('click', function(e) {
+            const link = e.target.closest('a.kb-link');
+            if (link && link.getAttribute('target') === '_blank') {
+                e.preventDefault(); 
+                const url = new URL(link.href);
+                const id = url.searchParams.get('id');
+                if (id) {
+                    showArticle(id);
+                }
+            }
+        });
+    }
+
+    function showArticle(id) {
+        // Toggle views
+        listView.classList.add('hidden');
+        articleView.classList.remove('hidden');
+        
+        // Reset state
+        loading.classList.remove('hidden');
+        errorMsg.classList.add('hidden');
+        content.classList.add('hidden');
+        
+        // Fetch
+        fetch(`ajax_kb_article.php?id=${id}`)
+            .then(response => response.json())
+            .then(data => {
+                loading.classList.add('hidden');
+                
+                if (data.success && data.article) {
+                    titleEl.textContent = data.article.title;
+                    authorEl.textContent = data.article.author_name;
+                    dateEl.textContent = data.article.created_at;
+                    bodyEl.innerHTML = data.article.content_html;
+                    
+                    content.classList.remove('hidden');
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            })
+            .catch(err => {
+                loading.classList.add('hidden');
+                errorMsg.textContent = 'Failed: ' + err.message;
+                errorMsg.classList.remove('hidden');
+            });
+    }
+});
+</script>
 
 <?php require_once 'includes/footer.php'; ?>
