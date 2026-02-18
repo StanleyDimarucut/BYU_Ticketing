@@ -5,6 +5,7 @@ if (!empty($_SESSION['user'])) {
   exit;
 }
 
+
 $error = '';
 $success = $_GET['registered'] ?? '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
