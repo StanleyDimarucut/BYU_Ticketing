@@ -185,14 +185,16 @@ $user = $_SESSION['user'] ?? null;
                 </span>
               <?php endif; ?>
             </a>
-            <a href="create_ticket.php"
-              class="group inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 text-brand-dark font-bold text-xs uppercase tracking-widest shadow-md hover:shadow-lg hover:from-yellow-300 hover:to-amber-400 transition-all transform hover:-translate-y-0.5 active:translate-y-0 border border-yellow-500/20">
-              <svg class="w-4 h-4 text-brand-dark/80 group-hover:text-brand-dark transition-colors" fill="none"
-                stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
-              </svg>
-              <span>New Ticket</span>
-            </a>
+            <?php if ($user['role'] !== 'technician'): ?>
+              <a href="create_ticket.php"
+                class="group inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 text-brand-dark font-bold text-xs uppercase tracking-widest shadow-md hover:shadow-lg hover:from-yellow-300 hover:to-amber-400 transition-all transform hover:-translate-y-0.5 active:translate-y-0 border border-yellow-500/20">
+                <svg class="w-4 h-4 text-brand-dark/80 group-hover:text-brand-dark transition-colors" fill="none"
+                  stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>New Ticket</span>
+              </a>
+            <?php endif; ?>
 
             <!-- User Avatar & Sign Out Dropdown wrapper (simplified as a group for now) -->
             <div class="flex items-center gap-3 pl-6 border-l border-gray-200">

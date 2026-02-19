@@ -38,13 +38,14 @@ if (is_array($resolution)) {
 }
 
 // Validate Hours
+$h_in = $_POST['hours_input'] ?? '';
+$m_in = $_POST['minutes_input'] ?? 0;
 $hours_val = null;
-if ($hours !== '') {
-    if (is_numeric($hours)) {
-        $hours_val = (float) $hours;
-    } else {
-        // invalid hours, maybe ignore or error? keeping null
-    }
+
+if ($h_in !== '' || $m_in !== '') {
+    $h = (int) $h_in;
+    $m = (int) $m_in;
+    $hours_val = $h + ($m / 60);
 }
 
 // Logic: Update Ticket
@@ -68,7 +69,7 @@ if ($resolution) {
 // Prepare Update
 // Prepare Update for Ticket Fields (Hours, Status, etc)
 $sql = "UPDATE tickets SET 
-        hours_worked = ?, 
+        hours_worked = hours_worked + ?, 
         resolution_status = ?, 
         additional_comments = ?";
 

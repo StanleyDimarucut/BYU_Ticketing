@@ -77,3 +77,32 @@ function get_unread_count($conn, $user_id)
     $res = $stmt->get_result()->fetch_assoc();
     return $res['c'] ?? 0;
 }
+
+/**
+ * Format decimal hours into a readable string (e.g., "3 hrs 15 mins").
+ */
+function format_hours_worked($decimal_hours)
+{
+    if (empty($decimal_hours) || $decimal_hours <= 0) {
+        return '0 hrs';
+    }
+
+    $hours = floor($decimal_hours);
+    $minutes = round(($decimal_hours - $hours) * 60);
+
+    // Handle rounding edge case (e.g. 0.999 -> 60 mins -> 1 hour)
+    if ($minutes == 60) {
+        $hours++;
+        $minutes = 0;
+    }
+
+    $parts = [];
+    if ($hours > 0) {
+        $parts[] = $hours . ' ' . ($hours == 1 ? 'hr' : 'hrs');
+    }
+    if ($minutes > 0) {
+        $parts[] = $minutes . ' ' . ($minutes == 1 ? 'min' : 'mins');
+    }
+
+    return implode(' ', $parts);
+}
