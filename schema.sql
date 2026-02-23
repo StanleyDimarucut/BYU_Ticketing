@@ -94,6 +94,7 @@ CREATE TABLE `tickets` (
   `subject` varchar(255) NOT NULL,
   `description` text NOT NULL,
   `category` varchar(50) NOT NULL DEFAULT 'Other',
+  `ticket_type` enum('Incident','Request') NOT NULL DEFAULT 'Incident',
   `status` varchar(50) NOT NULL DEFAULT 'Open',
   `priority` varchar(50) NOT NULL DEFAULT 'normal',
   `technician_response` text DEFAULT NULL,
