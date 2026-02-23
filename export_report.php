@@ -18,6 +18,7 @@ $start_date = $_GET['start_date'] ?? '';
 $end_date = $_GET['end_date'] ?? '';
 $status_filter = $_GET['status'] ?? '';
 $priority_filter = $_GET['priority'] ?? '';
+$type_filter = $_GET['ticket_type'] ?? '';
 
 if ($start_date) {
     $where[] = "created_at >= ?";
@@ -39,9 +40,14 @@ if ($priority_filter) {
     $params[] = $priority_filter;
     $types .= "s";
 }
+if ($type_filter) {
+    $where[] = "ticket_type = ?";
+    $params[] = $type_filter;
+    $types .= "s";
+}
 
 // Select fields for CSV
-$sql = "SELECT id, subject, status, priority, category, created_at, resolution_status, hours_worked FROM tickets WHERE " . implode(" AND ", $where) . " ORDER BY created_at DESC";
+$sql = "SELECT id, subject, status, priority, category, ticket_type, created_at, resolution_status, hours_worked FROM tickets WHERE " . implode(" AND ", $where) . " ORDER BY created_at DESC";
 $stmt = $conn->prepare($sql);
 if (!empty($params)) {
     $stmt->bind_param($types, ...$params);
@@ -57,7 +63,7 @@ header('Content-Disposition: attachment; filename="tickets_report_' . date('Y-m-
 $fp = fopen('php://output', 'w');
 
 // CSV Header Row
-fputcsv($fp, ['Ticket ID', 'Subject', 'Status', 'Priority', 'Category', 'Created Date', 'Resolution', 'Hours Worked']);
+fputcsv($fp, ['Ticket ID', 'Subject', 'Status', 'Priority', 'Category', 'Type', 'Created Date', 'Resolution', 'Hours Worked']);
 
 // CSV Data Rows
 while ($row = $result->fetch_assoc()) {
@@ -67,6 +73,7 @@ while ($row = $result->fetch_assoc()) {
         $row['status'],
         $row['priority'],
         $row['category'],
+        $row['ticket_type'],
         $row['created_at'],
         $row['resolution_status'],
         $row['hours_worked']

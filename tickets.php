@@ -86,6 +86,14 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
         class="<?= status_badge_class($single_ticket['status']) ?>"><?= htmlspecialchars($single_ticket['status']) ?></span>
       <span class="text-[#525252]">Category: <span
           class="font-bold uppercase tracking-wide"><?= htmlspecialchars($single_ticket['category'] ?? 'Other') ?></span></span>
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide <?= ($single_ticket['ticket_type'] ?? 'Incident') === 'Incident' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700' ?>">
+        <?php if (($single_ticket['ticket_type'] ?? 'Incident') === 'Incident'): ?>
+          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+        <?php else: ?>
+          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <?php endif; ?>
+        <?= htmlspecialchars($single_ticket['ticket_type'] ?? 'Incident') ?>
+      </span>
       <span class="text-[#525252]">Priority: <?= htmlspecialchars($single_ticket['priority'] ?? 'normal') ?></span>
       <?php if (!empty($single_ticket['importance'])): ?>
         <span class="text-[#525252] font-semibold">Importance: <span
@@ -509,7 +517,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
         <a href="tickets.php"
           class="inline-block px-4 py-2 rounded-lg border-2 border-[#262626] bg-white text-[#262626] font-medium hover:bg-[#262626] hover:text-[#f5e6a3] transition-colors">←
           Back to list</a>
-        <?php if ($user['role'] === 'technician' || $user['id'] === $single_ticket['user_id']): ?>
+        <?php if ($user['role'] === 'admin' || $user['role'] === 'technician' || $user['id'] === $single_ticket['user_id']): ?>
             <a href="edit_ticket.php?id=<?= $single_ticket['id'] ?>"
               class="inline-block px-4 py-2 rounded-lg border-2 border-[#262626] bg-[#f5e6a3] text-[#262626] font-semibold hover:bg-[#262626] hover:text-[#f5e6a3] transition-colors">Edit
               Ticket</a>
@@ -662,6 +670,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                   <tr>
                     <th class="px-6 py-4 tracking-wider">ID</th>
                     <th class="px-6 py-4 tracking-wider">Subject</th>
+                    <th class="px-6 py-4 tracking-wider">Type</th>
                     <th class="px-6 py-4 tracking-wider">Category</th>
                     <th class="px-6 py-4 tracking-wider">Status</th>
                     <th class="px-6 py-4 tracking-wider">Priority</th>
@@ -677,6 +686,11 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                       <tr class="bg-white hover:bg-[#f5e6a3]/10 transition-colors">
                         <td class="px-6 py-4 font-mono text-[#525252]">#<?= (int) $t['id'] ?></td>
                         <td class="px-6 py-4 font-medium text-[#262626]"><?= htmlspecialchars($t['subject'] ?? '') ?></td>
+                        <td class="px-6 py-4">
+                          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide <?= ($t['ticket_type'] ?? 'Incident') === 'Incident' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700' ?>">
+                            <?= htmlspecialchars($t['ticket_type'] ?? 'Incident') ?>
+                          </span>
+                        </td>
                         <td class="px-6 py-4 text-[#525252] text-xs font-bold uppercase tracking-wide">
                           <?= htmlspecialchars($t['category'] ?? 'Other') ?>
                         </td>
@@ -711,7 +725,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                                 </form>
                             <?php endif; ?>
 
-                            <?php if ($user['id'] === $t['user_id']): ?>
+                            <?php if ($user['role'] === 'admin' || $user['id'] === $t['user_id']): ?>
                                 <form action="delete_ticket.php" method="POST" class="inline-flex items-center"
                                   onsubmit="return confirm('Delete ticket #<?= $t['id'] ?>?');">
                                   <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(csrf_token()) ?>">

@@ -47,6 +47,22 @@ while ($row = $res->fetch_assoc()) {
     $chart_data[] = $row['c'];
 }
 
+// 2b. Chart Data (Ticket Type Distribution)
+$type_labels = [];
+$type_data = [];
+$res = $conn->query("SELECT ticket_type, COUNT(*) as c FROM tickets GROUP BY ticket_type");
+while ($row = $res->fetch_assoc()) {
+    $type_labels[] = $row['ticket_type'];
+    $type_data[] = $row['c'];
+}
+
+// 2c. Ticket Type Stats
+$type_stats = ['Incident' => 0, 'Request' => 0];
+$res = $conn->query("SELECT ticket_type, COUNT(*) as c FROM tickets GROUP BY ticket_type");
+while ($row = $res->fetch_assoc()) {
+    $type_stats[$row['ticket_type']] = $row['c'];
+}
+
 // 3. Filtered Report Data
 $params = [];
 $types = "";
@@ -57,6 +73,7 @@ $start_date = $_GET['start_date'] ?? '';
 $end_date = $_GET['end_date'] ?? '';
 $status_filter = $_GET['status'] ?? '';
 $priority_filter = $_GET['priority'] ?? '';
+$type_filter = $_GET['ticket_type'] ?? '';
 
 if ($start_date) {
     $where[] = "created_at >= ?";
@@ -78,8 +95,13 @@ if ($priority_filter) {
     $params[] = $priority_filter;
     $types .= "s";
 }
+if ($type_filter) {
+    $where[] = "ticket_type = ?";
+    $params[] = $type_filter;
+    $types .= "s";
+}
 
-$sql = "SELECT id, subject, status, priority, created_at FROM tickets WHERE " . implode(" AND ", $where) . " ORDER BY created_at DESC";
+$sql = "SELECT id, subject, status, priority, ticket_type, created_at FROM tickets WHERE " . implode(" AND ", $where) . " ORDER BY created_at DESC";
 $stmt = $conn->prepare($sql);
 if (!empty($params)) {
     $stmt->bind_param($types, ...$params);
@@ -93,7 +115,7 @@ $report_rows = $report_result->fetch_all(MYSQLI_ASSOC);
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
     <!-- Stat Cards -->
     <div
         class="bg-white border-2 border-[#262626] rounded-xl p-6 shadow-sm flex flex-col items-center justify-center text-center hover:shadow-md transition-shadow">
@@ -112,6 +134,30 @@ $report_rows = $report_result->fetch_all(MYSQLI_ASSOC);
         <h3 class="text-4xl font-black text-green-600 mb-2"><?= $stats['closed'] ?></h3>
         <span class="text-xs font-bold text-[#525252] uppercase tracking-widest">Closed</span>
     </div>
+
+    <div
+        class="bg-white border-2 border-[#262626] rounded-xl p-6 shadow-sm flex flex-col items-center justify-center text-center hover:shadow-md transition-shadow">
+        <div class="flex items-center gap-2 mb-2">
+            <svg class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <h3 class="text-4xl font-black text-red-600"><?= $type_stats['Incident'] ?></h3>
+        </div>
+        <span class="text-xs font-bold text-[#525252] uppercase tracking-widest">Incidents</span>
+    </div>
+
+    <div
+        class="bg-white border-2 border-[#262626] rounded-xl p-6 shadow-sm flex flex-col items-center justify-center text-center hover:shadow-md transition-shadow">
+        <div class="flex items-center gap-2 mb-2">
+            <svg class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 class="text-4xl font-black text-blue-600"><?= $type_stats['Request'] ?></h3>
+        </div>
+        <span class="text-xs font-bold text-[#525252] uppercase tracking-widest">Requests</span>
+    </div>
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -124,14 +170,13 @@ $report_rows = $report_result->fetch_all(MYSQLI_ASSOC);
         </div>
     </div>
 
-    <!-- Empty State / Future Widget -->
-    <div
-        class="bg-[#f5e6a3]/20 border-2 border-dashed border-[#262626]/20 rounded-xl p-6 flex flex-col items-center justify-center text-center h-80">
-        <svg class="w-12 h-12 text-[#262626]/20 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
-        <span class="text-sm font-bold text-[#262626]/40 uppercase tracking-wide">More analytics coming soon</span>
+    <!-- Incident vs Request Chart -->
+    <div class="bg-white border-2 border-[#262626] rounded-xl p-6 shadow-sm flex flex-col h-80">
+        <h3 class="text-lg font-bold text-[#262626] uppercase tracking-wide mb-4 border-b-2 border-[#262626]/10 pb-2">
+            Incidents or Requests</h3>
+        <div class="flex-1 relative w-full min-h-0">
+            <canvas id="typeChart"></canvas>
+        </div>
     </div>
 </div>
 
@@ -183,7 +228,7 @@ $report_rows = $report_result->fetch_all(MYSQLI_ASSOC);
         </div>
     </div>
 
-    <form method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+    <form method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
         <div>
             <label class="block text-xs font-bold text-[#525252] uppercase tracking-wide mb-1">Start Date</label>
             <input type="date" name="start_date" value="<?= htmlspecialchars($start_date) ?>"
@@ -218,6 +263,18 @@ $report_rows = $report_result->fetch_all(MYSQLI_ASSOC);
                 <?php endforeach; ?>
             </select>
         </div>
+        <div>
+            <label class="block text-xs font-bold text-[#525252] uppercase tracking-wide mb-1">Type</label>
+            <select name="ticket_type"
+                class="w-full px-3 py-2 border-2 border-[#262626]/20 rounded-lg focus:outline-none focus:border-[#262626] focus:ring-0 text-sm font-medium bg-white">
+                <option value="">All</option>
+                <?php foreach (['Incident', 'Request'] as $tt): ?>
+                    <option value="<?= $tt ?>" <?= $type_filter === $tt ? 'selected' : '' ?>>
+                        <?= $tt ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
         <div class="flex items-end">
             <button type="submit"
                 class="w-full px-4 py-2 border-2 border-[#262626] bg-[#f5e6a3] text-[#262626] text-sm font-bold uppercase tracking-wide rounded-lg hover:bg-[#262626] hover:text-[#f5e6a3] transition-colors">
@@ -234,6 +291,7 @@ $report_rows = $report_result->fetch_all(MYSQLI_ASSOC);
                     <th class="px-4 py-3">ID</th>
                     <th class="px-4 py-3">Date</th>
                     <th class="px-4 py-3">Subject</th>
+                    <th class="px-4 py-3">Type</th>
                     <th class="px-4 py-3">Status</th>
                     <th class="px-4 py-3">Priority</th>
                 </tr>
@@ -241,7 +299,7 @@ $report_rows = $report_result->fetch_all(MYSQLI_ASSOC);
             <tbody class="divide-y divide-[#262626]/10">
                 <?php if (empty($report_rows)): ?>
                     <tr>
-                        <td colspan="5" class="px-4 py-8 text-center text-[#525252] italic">No tickets found for selected
+                        <td colspan="6" class="px-4 py-8 text-center text-[#525252] italic">No tickets found for selected
                             criteria.</td>
                     </tr>
                 <?php else: ?>
@@ -255,6 +313,12 @@ $report_rows = $report_result->fetch_all(MYSQLI_ASSOC);
                             </td>
                             <td class="px-4 py-3 font-medium text-[#262626]">
                                 <?= htmlspecialchars($row['subject']) ?>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span
+                                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide <?= ($row['ticket_type'] ?? 'Incident') === 'Incident' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700' ?>">
+                                    <?= htmlspecialchars($row['ticket_type'] ?? 'Incident') ?>
+                                </span>
                             </td>
                             <td class="px-4 py-3">
                                 <span class="<?= status_badge_class($row['status']) ?>">
@@ -307,6 +371,48 @@ $report_rows = $report_result->fetch_all(MYSQLI_ASSOC);
                     callbacks: {
                         label: function (context) {
                             return context.label + ': ' + context.raw;
+                        }
+                    }
+                }
+            },
+            cutout: '70%'
+        }
+    });
+
+    // Incident vs Request Chart
+    const typeCtx = document.getElementById('typeChart').getContext('2d');
+    const typeChart = new Chart(typeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: <?= json_encode($type_labels) ?>,
+            datasets: [{
+                data: <?= json_encode($type_data) ?>,
+                backgroundColor: [
+                    '#ef4444', // red (Incident)
+                    '#3b82f6', // blue (Request)
+                ],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'right',
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 8
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const pct = total > 0 ? Math.round(context.raw / total * 100) : 0;
+                            return context.label + ': ' + context.raw + ' (' + pct + '%)';
                         }
                     }
                 }
@@ -393,7 +499,7 @@ $report_rows = $report_result->fetch_all(MYSQLI_ASSOC);
         }
 
         /* Hide stats, charts, and report generation controls for print */
-        .grid.grid-cols-1.md\:grid-cols-3,
+        .grid.grid-cols-1.md\:grid-cols-5,
         /* Stats Cards */
         .grid.grid-cols-1.md\:grid-cols-2,
         /* Charts */

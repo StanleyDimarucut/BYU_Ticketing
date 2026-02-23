@@ -16,15 +16,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $description = trim($_POST['description'] ?? '');
   $category = in_array($_POST['category'] ?? '', ['Hardware', 'Software', 'Network', 'Access/Login', 'Other']) ? $_POST['category'] : 'Other';
   $priority = in_array($_POST['priority'] ?? '', ['low', 'normal', 'high']) ? $_POST['priority'] : 'normal';
+  $ticket_type = in_array($_POST['ticket_type'] ?? '', ['Incident', 'Request']) ? $_POST['ticket_type'] : 'Incident';
 
   $importance = $_POST['importance'] ?? '';
 
   if ($title === '' || $description === '' || $importance === '') {
     $error = 'Title, description, and importance level are required.';
   } else {
-    $stmt = $conn->prepare('INSERT INTO tickets (user_id, subject, description, category, status, priority, importance) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    $stmt = $conn->prepare('INSERT INTO tickets (user_id, subject, description, category, ticket_type, status, priority, importance) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     $status = 'Open';
-    $stmt->bind_param('issssss', $user['id'], $title, $description, $category, $status, $priority, $importance);
+    $stmt->bind_param('isssssss', $user['id'], $title, $description, $category, $ticket_type, $status, $priority, $importance);
     if ($stmt->execute()) {
       $ticket_id = (int) $conn->insert_id;
       log_ticket_activity($conn, $ticket_id, $user['id'], 'Created', 'Ticket created');
@@ -138,6 +139,42 @@ require_once 'includes/header.php';
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Ticket Type Section -->
+    <div>
+      <span class="block text-xs font-bold text-[#525252] uppercase tracking-wider mb-2">Ticket Type <span
+          class="text-red-500">*</span></span>
+      <div class="flex flex-wrap gap-4 p-4 border border-[#262626]/20 rounded-lg bg-gray-50">
+        <?php $POST_TYPE = $_POST['ticket_type'] ?? 'Incident'; ?>
+        <?php foreach (['Incident', 'Request'] as $type_opt): ?>
+          <label class="flex items-center gap-3 cursor-pointer group">
+            <div class="relative flex items-center">
+              <input type="radio" name="ticket_type" value="<?= $type_opt ?>" <?= $type_opt === $POST_TYPE ? 'checked' : '' ?>
+                class="peer w-5 h-5 text-[#eab308] focus:ring-[#f5e6a3] border-gray-300 checked:bg-[#eab308] checked:border-[#eab308] transition-all">
+            </div>
+            <div class="flex items-center gap-2">
+              <?php if ($type_opt === 'Incident'): ?>
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              <?php else: ?>
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              <?php endif; ?>
+              <span
+                class="text-sm font-medium text-[#262626] group-hover:text-[#eab308] transition-colors"><?= $type_opt ?></span>
+            </div>
+          </label>
+        <?php endforeach; ?>
+      </div>
+      <p class="text-xs text-[#525252] mt-1"><strong>Incident:</strong> Something is broken or not working.
+        <strong>Request:</strong> A new service or change request.</p>
     </div>
 
     <!-- Importance Section -->
