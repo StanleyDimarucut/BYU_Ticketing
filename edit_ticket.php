@@ -101,10 +101,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Handle New Attachments
             $upload_dir = __DIR__ . '/uploads/tickets/' . $ticket_id;
+            $upload_warnings = [];
             if (!empty($_FILES['attachments']['name'][0])) {
                 $names = is_array($_FILES['attachments']['name']) ? $_FILES['attachments']['name'] : [$_FILES['attachments']['name']];
                 $tmp = is_array($_FILES['attachments']['tmp_name']) ? $_FILES['attachments']['tmp_name'] : [$_FILES['attachments']['tmp_name']];
-                $count = 0; // We might want to check existing count, but for now simple add
+                $errors = is_array($_FILES['attachments']['error']) ? $_FILES['attachments']['error'] : [$_FILES['attachments']['error']];
+                $count = 0;
 
                 foreach ($names as $i => $original_name) {
                     if ($count >= MAX_FILES)
@@ -112,25 +114,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (trim($original_name) === '')
                         continue;
 
-                    $tmp_name = $tmp[$i] ?? '';
-                    if (!is_uploaded_file($tmp_name))
+                    // Check PHP upload error
+                    $upload_err = $errors[$i] ?? UPLOAD_ERR_OK;
+                    if ($upload_err !== UPLOAD_ERR_OK) {
+                        $err_msgs = [
+                            UPLOAD_ERR_INI_SIZE => 'File exceeds server upload_max_filesize limit',
+                            UPLOAD_ERR_FORM_SIZE => 'File exceeds form MAX_FILE_SIZE',
+                            UPLOAD_ERR_PARTIAL => 'File was only partially uploaded',
+                            UPLOAD_ERR_NO_FILE => 'No file was uploaded',
+                            UPLOAD_ERR_NO_TMP_DIR => 'Missing temp folder on server',
+                            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk on server',
+                            UPLOAD_ERR_EXTENSION => 'Upload stopped by a PHP extension',
+                        ];
+                        $upload_warnings[] = htmlspecialchars($original_name) . ': ' . ($err_msgs[$upload_err] ?? 'Unknown upload error');
                         continue;
+                    }
+
+                    $tmp_name = $tmp[$i] ?? '';
+                    if (!is_uploaded_file($tmp_name)) {
+                        $upload_warnings[] = htmlspecialchars($original_name) . ': Not a valid uploaded file';
+                        continue;
+                    }
 
                     $ext = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
-                    if (!in_array($ext, ALLOWED_EXT))
+                    if (!in_array($ext, ALLOWED_EXT)) {
+                        $upload_warnings[] = htmlspecialchars($original_name) . ': File type not allowed (.' . $ext . ')';
                         continue;
+                    }
 
                     $finfo = finfo_open(FILEINFO_MIME_TYPE);
                     $mime = finfo_file($finfo, $tmp_name);
                     finfo_close($finfo);
 
-                    if (!in_array($mime, ALLOWED_TYPES))
+                    if (!in_array($mime, ALLOWED_TYPES)) {
+                        $upload_warnings[] = htmlspecialchars($original_name) . ': Invalid MIME type (' . $mime . ')';
                         continue;
-                    if (filesize($tmp_name) > MAX_FILE_SIZE)
+                    }
+                    if (filesize($tmp_name) > MAX_FILE_SIZE) {
+                        $upload_warnings[] = htmlspecialchars($original_name) . ': File exceeds 5MB limit';
                         continue;
+                    }
 
                     if (!is_dir($upload_dir)) {
-                        mkdir($upload_dir, 0755, true);
+                        if (!mkdir($upload_dir, 0777, true)) {
+                            $upload_warnings[] = 'Could not create upload directory. Check server folder permissions for: uploads/tickets/';
+                            break;
+                        }
                     }
 
                     $filename = bin2hex(random_bytes(8)) . '.' . $ext;
@@ -141,11 +170,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $ins->bind_param('iss', $ticket_id, $filename, $original_name);
                         $ins->execute();
                         $count++;
+                    } else {
+                        $upload_warnings[] = htmlspecialchars($original_name) . ': Failed to move file. Check server write permissions on uploads/ folder.';
                     }
                 }
             }
 
-            $_SESSION['flash_success'] = 'Ticket updated successfully.';
+            $flash_msg = 'Ticket updated successfully.';
+            if (!empty($upload_warnings)) {
+                $flash_msg .= ' However, some attachments failed: ' . implode('; ', $upload_warnings);
+            }
+            $_SESSION['flash_success'] = $flash_msg;
             header('Location: tickets.php?id=' . $ticket_id);
             exit;
         } else {
