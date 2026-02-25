@@ -31,14 +31,6 @@ $users = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
 <section aria-labelledby="users-list-heading">
     <div class="flex items-center justify-between mt-4 mb-6">
         <h2 id="users-list-heading" class="text-xl font-bold text-[#262626] uppercase tracking-tight">All Users</h2>
-        <a href="register.php"
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-[#262626] bg-[#f5e6a3] text-[#262626] font-bold uppercase tracking-wide hover:bg-[#262626] hover:text-[#f5e6a3] transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Add User
-        </a>
     </div>
 
     <?php if (empty($users)): ?>

@@ -11,8 +11,8 @@ error_reporting(E_ALL);
 
 // Database connection
 $host = 'localhost';
-$user = 'user';          // <-- our MySQL user
-$pass = 'mypassword';    // <-- password for 'user'
+$user = 'root';          // <-- our MySQL user
+$pass = '';    // <-- password for 'user'
 $name = 'byu_ticketing';
 
 $conn = new mysqli($host, $user, $pass, $name);

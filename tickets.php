@@ -157,9 +157,9 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
       }
       ?>
 
-      <!-- Left Column: Technician Responses -->
+      <!-- Left Column -->
       <div class="<?= $col_resp ?>">
-        <h3 class="text-xl font-bold text-[#262626] mb-4 uppercase tracking-wide">Technician Responses</h3>
+        <h3 class="text-xl font-bold text-[#262626] mb-4 uppercase tracking-wide"><?= ($user['role'] === 'technician' || $user['role'] === 'admin') ? 'Technician Responses' : 'Ticket Status' ?></h3>
 
         <?php if ($user['role'] === 'technician'): ?>
 
@@ -241,7 +241,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                 </div>
 
                 <div class="mb-6">
-                  <label for="additional_comments" class="block text-sm font-bold text-[#f5e6a3] mb-1">Update Additional Comments</label>
+                  <label for="additional_comments" class="block text-sm font-bold text-[#f5e6a3] mb-1">Update Note</label>
                   <textarea id="additional_comments" name="additional_comments" rows="2"
                     class="w-full px-3 py-2 bg-white text-[#262626] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f5e6a3]"
                     placeholder="Any other notes..."><?= htmlspecialchars($single_ticket['additional_comments'] ?? '') ?></textarea>
@@ -256,31 +256,8 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
               </form>
 
           <?php else: ?>
-              <!-- User View (Read Only) - Show all responses -->
-               <?php if (!empty($responses) || !empty($single_ticket['resolution_status'])): ?>
-              
-                    <?php if (!empty($responses)): ?>
-                          <div class="space-y-4 mb-6">
-                              <?php foreach ($responses as $resp): ?>
-                                    <div class="bg-gray-50 border border-gray-200 p-4 rounded-xl">
-                                         <div class="flex justify-between items-center mb-2">
-                                            <span class="font-bold text-[#262626] text-sm">
-                                                <?= htmlspecialchars($resp['user_name'] ?? 'Unknown') ?>
-                                                <span class="text-xs font-normal text-[#525252] bg-gray-200 px-1.5 py-0.5 rounded ml-1 uppercase tracking-wider"><?= htmlspecialchars($resp['user_role'] ?? 'System') ?></span>
-                                            </span>
-                                            <span class="text-xs text-[#525252]"><?= date('M j, Y g:i A', strtotime($resp['created_at'])) ?></span>
-                                        </div>
-                                        <div class="text-sm text-[#262626] whitespace-pre-wrap leading-relaxed">
-                                            <?= nl2br(htmlspecialchars($resp['response'])) ?>
-                                        </div>
-                                    </div>
-                              <?php endforeach; ?>
-                          </div>
-                    <?php else: ?>
-                           <div class="p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl text-center mb-6">
-                              <p class="text-gray-500 italic">No technician response yet.</p>
-                            </div>
-                    <?php endif; ?>
+              <!-- User View (Read Only) - Status Info Only -->
+               <?php if (!empty($single_ticket['resolution_status']) || !empty($single_ticket['hours_worked']) || !empty($single_ticket['importance']) || !empty($single_ticket['additional_comments'])): ?>
 
                    <!-- Status/Hours Display for User -->
                   <div class="bg-[#262626] text-white p-6 rounded-xl shadow-lg border-2 border-[#eab308]">
@@ -309,7 +286,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
                     <?php if (!empty($single_ticket['additional_comments'])): ?>
                         <div class="border-t border-[#525252] pt-4 mt-4">
-                          <span class="block text-xs font-bold text-[#f5e6a3] uppercase tracking-wider mb-1">Additional Comments</span>
+                          <span class="block text-xs font-bold text-[#f5e6a3] uppercase tracking-wider mb-1">Note</span>
                           <div class="whitespace-pre-wrap text-sm text-gray-300">
                             <?= nl2br(htmlspecialchars($single_ticket['additional_comments'])) ?>
                           </div>
@@ -319,7 +296,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
                   </div>
               <?php else: ?>
                   <div class="p-6 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl text-center">
-                    <p class="text-gray-500 italic">No technician response yet.</p>
+                    <p class="text-gray-500 italic">No updates yet.</p>
                   </div>
               <?php endif; ?>
           <?php endif; ?>

@@ -69,7 +69,7 @@ if ($resolution) {
 // Prepare Update
 // Prepare Update for Ticket Fields (Hours, Status, etc)
 $sql = "UPDATE tickets SET 
-        hours_worked = hours_worked + ?, 
+        hours_worked = COALESCE(hours_worked, 0) + COALESCE(?, 0), 
         resolution_status = ?, 
         additional_comments = ?";
 
